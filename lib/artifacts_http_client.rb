@@ -12,7 +12,7 @@ class ArtifactsHttpClient
   API_HOST = 'https://api.artifactsmmo.com'
 
   def initialize
-    host = URI(PI_HOST)
+    host = URI(API_HOST)
     @http = Net::HTTP.new(host.host, host.port)
     @http.use_ssl = true
     @http.verify_mode = OpenSSL::SSL::VERIFY_NONE

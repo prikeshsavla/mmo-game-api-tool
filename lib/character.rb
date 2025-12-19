@@ -23,11 +23,13 @@ class Character
     result
   end
 
-  def action(action_name, body = {}, iterations = 1)
-    responses = Array.new(iterations).map do
+  def action(action_name, params = {})
+    data = { body: {}, iterations: 1 }.merge(params)
+    puts "Character: #{name}, Action: #{action_name}, params: #{data[:body]}, #{data[:iterations]} time(s)"
+    responses = Array.new(data[:iterations]).map do
       wait_for_cooldown
 
-      client.request_post("/my/#{name}/action/#{action_name}", body)
+      client.request_post("/my/#{name}/action/#{action_name}", data[:body])
     end
     puts "#{name}: #{changes}"
     responses
