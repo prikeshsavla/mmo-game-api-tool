@@ -25,6 +25,7 @@ class ArtifactsHttpClient
   end
 
   def request_post(path, body)
+    puts 'POST:', path, body
     url = URI("#{API_HOST}#{path}")
     request = Net::HTTP::Post.new(url)
     request.body = JSON[body]

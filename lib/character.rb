@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 class Character
-  ALLOW_ACTIONS = %w[move gathering].freeze
+  attr_reader :name
+
+  ALLOW_ACTIONS = %w[move gathering bank_deposit_item].freeze
 
   def initialize(name, client = ArtifactsHttpClient.new)
     @name = name
@@ -12,6 +14,10 @@ class Character
 
   def details
     client.request_get("/characters/#{name}")['data']
+  end
+
+  def inventory
+    client.request_get("/characters/#{name}")['data']['inventory']
   end
 
   def changes
@@ -29,7 +35,7 @@ class Character
     responses = Array.new(data[:iterations]).map do
       wait_for_cooldown
 
-      client.request_post("/my/#{name}/action/#{action_name}", data[:body])
+      client.request_post("/my/#{name}/action/#{action_name.split('_').join('/')}", data[:body])
     end
     puts "#{name}: #{changes}"
     responses
@@ -67,5 +73,5 @@ class Character
 
   private
 
-  attr_reader :name, :client
+  attr_reader :client
 end
