@@ -16,16 +16,17 @@ class ArtifactsHttpClient
     @http = Net::HTTP.new(host.host, host.port)
     @http.use_ssl = true
     @http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    @logger = Logger.new('log/http.log')
   end
 
   def request_get(path)
     url = URI("#{API_HOST}#{path}")
     request = Net::HTTP::Get.new(url)
-    execute_request(request)
+    execute_request(request)['data']
   end
 
   def request_post(path, body)
-    puts 'POST:', path, body
+    @logger.debug("POST: #{path} #{body}")
     url = URI("#{API_HOST}#{path}")
     request = Net::HTTP::Post.new(url)
     request.body = JSON[body]
