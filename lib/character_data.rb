@@ -19,4 +19,8 @@ CharacterData = Struct.new('CharacterData', :name, :account, :skin, :level, :xp,
     result[:inventory] = inventory - old_data.inventory if inventory && old_data.inventory
     result
   end
+
+  def self.from_hash(hash)
+    CharacterData.new(*hash.values)
+  end
 end

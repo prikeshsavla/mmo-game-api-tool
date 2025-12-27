@@ -20,15 +20,14 @@ class ArtifactsHttpClient
   end
 
   def request_get(path)
-    url = URI("#{API_HOST}#{path}")
-    request = Net::HTTP::Get.new(url)
+    @logger.debug("POST: #{path}")
+    request = Net::HTTP::Get.new(URI("#{API_HOST}#{path}"))
     execute_request(request)['data']
   end
 
   def request_post(path, body)
     @logger.debug("POST: #{path} #{body}")
-    url = URI("#{API_HOST}#{path}")
-    request = Net::HTTP::Post.new(url)
+    request = Net::HTTP::Post.new(URI("#{API_HOST}#{path}"))
     request.body = JSON[body]
     execute_request(request)
   end

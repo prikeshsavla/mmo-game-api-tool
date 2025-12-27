@@ -3,10 +3,10 @@
 require_relative 'lib/artifacts_http_client'
 require_relative 'lib/character'
 
+# TODO: refactory strategy with a builder pattern
 mine_copper = [
   { action: 'move', params: { body: { x: 2, y: 0 } } },
-  *Array.new(2).map { { action: 'gathering', params: { body: {} } } },
-  { action: 'changes' }
+  *Array.new(2).map { { action: 'gathering', params: { body: {} } } }
 ]
 
 my_characters = Character.my_characters
@@ -18,6 +18,7 @@ my_characters.values.map do |character|
   tasks[character] = Thread::Queue.new unless tasks[character]
 end
 
+# How to share this queue with the Webserver and the thread processor
 workers = tasks.keys.map do |character|
   Thread.new do
     loop do
@@ -35,7 +36,7 @@ workers = tasks.keys.map do |character|
       next unless task
 
       puts "Processing task #{task} by #{Thread.current.object_id}"
-      character.execute_strategy(task)
+      character.perform(task)
     end
   end
 end
