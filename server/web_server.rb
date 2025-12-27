@@ -10,10 +10,12 @@ require 'open-uri'
 require 'json'
 
 class WebRequestApp
-  def call(env)
+  def call(env, worker_pool)
     puts env
     body = env['rack.input'].string
-    puts body
+    request = JSON.parse(body, { symbolize_names: true })
+    puts request[:character], request[:tasks]
+    worker_pool.add_tasks(request)
     [200, { 'Content-Type' => 'application/json' }, [body]]
   end
 end
@@ -37,6 +39,17 @@ class TaskWorkerThreadPool
       tasks[character_name] = Thread::Queue.new unless tasks[character_name]
       @threads[character_name] = Thread.new do
         thread_block(character_name)
+      end
+    end
+  end
+
+  def add_tasks(params)
+    params[:tasks].each do |entry|
+      if entry[:params][:iterations]
+        entry_without_iterations = entry.merge({ params: { body: entry[:params][:body], iterations: 1 } })
+        entry[:params][:iterations].times { tasks[params[:character]] << [entry_without_iterations] }
+      else
+        tasks[params[:character]] << [entry]
       end
     end
   end
@@ -96,17 +109,17 @@ class SingleThreadedServer
     worker_pool = TaskWorkerThreadPool.new(my_characters: my_characters)
     worker_pool.start_threads
 
-    my_characters.keys.map do |character_name|
-      mine_copper.each do |entry|
-        worker_pool.tasks[character_name] << [entry]
-      end
-    end
+    # my_characters.keys.map do |character_name|
+    #   mine_copper.each do |entry|
+    #     worker_pool.tasks[character_name] << [entry]
+    #   end
+    # end
 
     # worker_pool.threads.values.each(&:join)
     loop do
       conn, _addr_info = socket.accept
       request = RequestParser.call(conn)
-      status, headers, body = app.call(request)
+      status, headers, body = app.call(request, worker_pool)
       HttpResponder.call(conn, status, headers, body)
     rescue StandardError => e
       puts e.message

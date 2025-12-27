@@ -39,6 +39,8 @@ class Character
   end
 
   def perform(strategy)
+    puts strategy
+    # binding.pry
     strategy.each do |value|
       send(value[:action], value[:params])
     end
