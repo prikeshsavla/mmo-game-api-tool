@@ -1,6 +1,9 @@
+# frozen_string_literal: true
+
 require 'stringio'
 require 'uri'
 
+# Parses raw TCP connection data into a Rack-compatible environment hash.
 class RequestParser
   MAX_URI_LENGTH = 2083
   MAX_HEADER_LENGTH = (112 * 1024)
@@ -8,28 +11,30 @@ class RequestParser
   class << self
     def call(conn)
       method, full_path, path, query = read_request_line(conn)
-
       headers = read_headers(conn)
-
       body = read_body(conn: conn, method: method, headers: headers)
-      peeraddr = conn.peeraddr
-      addr = conn.addr
-      port = addr[1]
-      remote_host = peeraddr[2]
-      remote_address = peeraddr[3]
+
+      params = RequestParams.new(conn, method, full_path, path, query, headers, body)
+      build_rack_env(params)
+    end
+
+    RequestParams = Struct.new(:conn, :http_method, :full_path, :path, :query, :headers, :body)
+
+    def build_rack_env(params)
+      env = {
+        'REQUEST_METHOD' => params.http_method, 'PATH_INFO' => params.path,
+        'QUERY_STRING' => params.query, 'rack.input' => params.body ? StringIO.new(params.body) : nil
+      }
+      env.merge!(remote_env(params))
+      env.merge!(rack_headers(params.headers))
+    end
+
+    def remote_env(params)
+      peer = params.conn.peeraddr
       {
-        'REQUEST_METHOD' => method,
-        'PATH_INFO' => path,
-        'QUERY_STRING' => query,
-        'rack.input' => body ? StringIO.new(body) : nil,
-        'REMOTE_ADDR' => remote_address,
-        'REMOTE_HOST' => remote_host,
-        'REQUEST_URI' => make_request_uri(
-          full_path: full_path,
-          port: port,
-          remote_host: remote_host
-        )
-      }.merge(rack_headers(headers))
+        'REMOTE_ADDR' => peer[3], 'REMOTE_HOST' => peer[2],
+        'REQUEST_URI' => make_request_uri(full_path: params.full_path, port: params.conn.addr[1], remote_host: peer[2])
+      }
     end
 
     private

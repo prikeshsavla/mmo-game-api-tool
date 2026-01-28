@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Formats and sends HTTP responses over a TCP connection.
 class HttpResponder
   STATUS_MESSAGES = {
     100 => 'Continue',
@@ -52,34 +53,26 @@ class HttpResponder
     504 => 'Gateway Timeout',
     505 => 'HTTP Version Not Supported',
     507 => 'Insufficient Storage',
-    511 => 'Network Authentication Required',
+    511 => 'Network Authentication Required'
   }.freeze
 
   # status: int
   # headers: Hash
   # body: array of strings
   def self.call(conn, status, headers, body)
-    # status line
     status_text = STATUS_MESSAGES[status]
     conn.send("HTTP/1.1 #{status} #{status_text}\r\n", 0)
 
-    # headers
-    # we need to tell how long the body is before sending anything,
-    # this way the remote client knows when to stop reading
-    conn.send("Content-Length: #{body.sum(&:length)}\r\n", 0)
-    headers.each_pair do |name, value|
-      conn.send("#{name}: #{value}\r\n", 0)
-    end
+    send_headers(conn, headers, body)
+    conn.send("\r\n", 0) # separate headers from body
 
-    # tell that we don't want to keep the connection open
-    conn.send("Connection: close\r\n", 0)
-
-    # separate headers from body with an empty line
-    conn.send("\r\n", 0)
-
-    # body
-    body.each do |chunk|
-      conn.send(chunk, 0)
-    end
+    body.each { |chunk| conn.send(chunk, 0) }
   end
+
+  def self.send_headers(conn, headers, body)
+    conn.send("Content-Length: #{body.sum(&:length)}\r\n", 0)
+    headers.each_pair { |name, value| conn.send("#{name}: #{value}\r\n", 0) }
+    conn.send("Connection: close\r\n", 0)
+  end
+  private_class_method :send_headers
 end

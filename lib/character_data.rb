@@ -1,3 +1,6 @@
+# frozen_string_literal: true
+
+# Data structure representing a character's state and attributes retrieved from the API.
 CharacterData = Struct.new('CharacterData', :name, :account, :skin, :level, :xp, :max_xp, :gold, :speed, :mining_level,
                            :mining_xp, :mining_max_xp, :woodcutting_level, :woodcutting_xp, :woodcutting_max_xp,
                            :fishing_level, :fishing_xp, :fishing_max_xp, :weaponcrafting_level, :weaponcrafting_xp,
@@ -21,6 +24,9 @@ CharacterData = Struct.new('CharacterData', :name, :account, :skin, :level, :xp,
   end
 
   def self.from_hash(hash)
-    CharacterData.new(*hash.values)
+    return nil if hash.nil?
+
+    values = members.map { |m| hash[m.to_s] }
+    CharacterData.new(*values)
   end
 end

@@ -1,7 +1,5 @@
+# frozen_string_literal: true
+
 require_relative 'server/web_server'
 
-APP = WebRequestApp
-
-SERVER = SingleThreadedServer
-
-SERVER.new(APP.new).start
+SingleThreadedServer.new.start

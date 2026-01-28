@@ -4,21 +4,28 @@ require 'logger'
 require 'pry'
 require_relative 'character_data'
 
+# Represents an MMO character and provides methods for actions and profile management.
 class Character
   attr_reader :name, :profile
 
-  ALLOW_ACTIONS = %w[move gathering bank_deposit_item].freeze
+  ALLOW_ACTIONS = %w[
+    move gathering fight rest equip unequip use
+    bank_deposit_item bank_withdraw_item bank_deposit_gold bank_withdraw_gold
+    task_new task_complete task_cancel task_exchange task_trade
+    recycling crafting ge_buy ge_sell ge_cancel
+  ].freeze
 
   def initialize(name, client: ArtifactsHttpClient.new, logger: Logger.new($stdout))
     @name = name
     @client = client
     @logger = logger
-    @profile = CharacterData.from_hash(client.request_get("/characters/#{name}"))
+    response = client.request_get("/characters/#{name}")
+    @profile = CharacterData.from_hash(response[:body]['data'])
   end
 
   def self.my_characters(client = ArtifactsHttpClient.new)
     response = client.request_get('/my/characters')
-    response.each_with_object({}) do |entry, hash|
+    (response[:body]['data'] || []).each_with_object({}) do |entry, hash|
       hash[entry['name']] = Character.new(entry['name'], logger: Logger.new($stdout))
     end
   end
@@ -44,6 +51,7 @@ class Character
     strategy.each do |value|
       send(value[:action], value[:params])
     end
+    wait_for_cooldown
   end
 
   private
@@ -51,9 +59,11 @@ class Character
   def perform_action(action_name, body)
     wait_for_cooldown
 
-    response = client.request_post("/my/#{name}/action/#{action_name.split('_').join('/')}", body)
-    @profile = CharacterData.from_hash(response['data']['character']) if response.dig('data', 'character')
-    response
+    response_data = client.request_post("/my/#{name}/action/#{action_name.split('_').join('/')}", body)
+    body_data = response_data[:body]
+    char_data = body_data.dig('data', 'character') || body_data.dig('error', 'details', 'character')
+    @profile = CharacterData.from_hash(char_data) if char_data
+    body_data
   end
 
   def action(action_name, params = {})

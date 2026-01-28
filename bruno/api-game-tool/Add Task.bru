@@ -1,0 +1,40 @@
+meta {
+  name: Add Task
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:3000
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "tasks": [
+      {
+        "action": "move",
+        "params": {
+          "body": { "x": 4, "y": 0
+          }
+        }
+      },
+      {
+        "action": "move",
+        "params": {
+          "body": { "x": 2, "y": 0
+          }
+        }
+      },
+      {
+        "action": "gathering",
+        "params": {
+          "body": {},
+          "iterations": 5
+        }
+      }
+    ],
+    "character": "Dexter"
+  }
+}
